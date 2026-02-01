@@ -68,14 +68,17 @@ services:
     runtime: node
     region: singapore
     plan: free
-    rootDir: apps/web
     buildCommand: |
-      cd ../.. && npm install && npm run build --workspace=@quickmart/shared-types && npm run build --workspace=@quickmart/web
-    startCommand: npm run start
+      npm install && npm run build --workspace=@quickmart/shared-types && npm run build --workspace=@quickmart/web && cp -r apps/web/public apps/web/.next/standalone/apps/web/ && cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/
+    startCommand: node apps/web/.next/standalone/apps/web/server.js
     healthCheckPath: /
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 3000
+      - key: HOSTNAME
+        value: 0.0.0.0
       - key: NEXT_PUBLIC_API_URL
         value: https://quickmart-api.onrender.com
       - key: NEXT_PUBLIC_WS_URL
