@@ -17,7 +17,7 @@ services:
     buildCommand: |
       cd ../.. && npm install --legacy-peer-deps --include=dev && npm run build --workspace=@quickmart/db && npm run build --workspace=@quickmart/shared-types && npm run build --workspace=@quickmart/api
     startCommand: npm run start:prod
-    healthCheckPath: /health
+    healthCheckPath: /api/v1/health/live
     envVars:
       - key: NODE_ENV
         value: production
