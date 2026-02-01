@@ -69,7 +69,7 @@ services:
     region: singapore
     plan: free
     buildCommand: |
-      npm install --legacy-peer-deps --include=dev && npm run build --workspace=@quickmart/shared-types && npm run build --workspace=@quickmart/web && cp -r apps/web/public apps/web/.next/standalone/apps/web/ && cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/
+      npm install --legacy-peer-deps --include=dev && npm run build --workspace=@quickmart/shared-types && npm run build --workspace=@quickmart/web && cp -r apps/web/public apps/web/.next/standalone/apps/web/ 2>/dev/null || true && cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/
     startCommand: node apps/web/.next/standalone/apps/web/server.js
     healthCheckPath: /
     envVars:
