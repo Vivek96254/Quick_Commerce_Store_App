@@ -20,8 +20,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/lib/store';
-import Navbar from '@/components/layout/navbar';
-import Footer from '@/components/layout/footer';
+import { Navbar } from '@/components/layout/navbar';
+import { Footer } from '@/components/layout/footer';
 
 export default function SettingsPage() {
   const router = useRouter();

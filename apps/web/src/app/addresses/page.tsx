@@ -18,8 +18,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/lib/store';
 import { addressesApi, ApiError } from '@/lib/api';
-import Navbar from '@/components/layout/navbar';
-import Footer from '@/components/layout/footer';
+import { Navbar } from '@/components/layout/navbar';
+import { Footer } from '@/components/layout/footer';
 
 const addressTypes = [
   { value: 'HOME', label: 'Home', icon: Home },
