@@ -258,29 +258,49 @@ Test on:
 
 ## 🚀 Deployment
 
-### App Store (iOS)
+For complete production deployment instructions, see **[DEPLOYMENT.md](./DEPLOYMENT.md)**
 
-1. Build with EAS:
+### Quick Start
+
+1. **Install EAS CLI:**
 ```bash
-eas build --platform ios --profile production
+npm install -g eas-cli
 ```
 
-2. Submit to App Store:
+2. **Login to Expo:**
+```bash
+eas login
+```
+
+3. **Configure project:**
+```bash
+eas build:configure
+```
+
+4. **Build for production:**
+```bash
+# iOS
+eas build --platform ios --profile production
+
+# Android
+eas build --platform android --profile production
+
+# Both
+eas build --platform all --profile production
+```
+
+5. **Submit to stores:**
 ```bash
 eas submit --platform ios
-```
-
-### Google Play (Android)
-
-1. Build with EAS:
-```bash
-eas build --platform android --profile production
-```
-
-2. Submit to Google Play:
-```bash
 eas submit --platform android
 ```
+
+**📖 Full deployment guide:** See [DEPLOYMENT.md](./DEPLOYMENT.md) for:
+- Complete step-by-step instructions
+- App Store and Google Play setup
+- Credentials management
+- OTA updates
+- Troubleshooting
 
 ## 📚 Resources
 

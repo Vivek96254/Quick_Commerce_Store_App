@@ -51,6 +51,8 @@ apps/mobile/android
 *.key
 *.mobileprovision
 *.orig.*
+service-account-key.json
+*.keystore
 
 # Logs
 logs

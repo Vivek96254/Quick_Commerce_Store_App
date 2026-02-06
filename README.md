@@ -383,6 +383,27 @@ After seeding:
 
 ## 🚢 Deployment
 
+### Mobile App Deployment
+
+The mobile app can be deployed to **App Store (iOS)** and **Google Play (Android)** using Expo Application Services (EAS).
+
+**Quick Start:**
+```bash
+cd apps/mobile
+npm install -g eas-cli
+eas login
+eas build:configure
+eas build --platform all --profile production
+eas submit --platform all
+```
+
+**📖 Complete Guide:** See [apps/mobile/DEPLOYMENT.md](apps/mobile/DEPLOYMENT.md) for:
+- Step-by-step deployment instructions
+- App Store and Google Play setup
+- Credentials management
+- OTA updates configuration
+- Testing and submission process
+
 ### Deploy to Render.com
 
 1. **Push to GitHub**
