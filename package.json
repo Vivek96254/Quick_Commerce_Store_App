@@ -9,6 +9,9 @@
   ],
   "scripts": {
     "dev": "turbo run dev",
+    "dev:api": "npm run dev --workspace=@quickmart/api",
+    "dev:web": "npm run dev --workspace=@quickmart/web",
+    "dev:mobile": "npm run dev --workspace=@quickmart/mobile",
     "build": "turbo run build",
     "start": "turbo run start",
     "lint": "turbo run lint",

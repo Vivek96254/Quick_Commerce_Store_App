@@ -327,6 +327,53 @@ This starts:
 - Web: http://localhost:3000
 - API Docs: http://localhost:4000/api-docs
 
+**Or start individually:**
+```bash
+npm run dev:api      # Start API only
+npm run dev:web      # Start Web app only
+npm run dev:mobile   # Start Mobile app (Expo)
+```
+
+### Mobile App Setup
+
+1. **Install dependencies:**
+```bash
+cd apps/mobile
+npm install
+```
+
+2. **Configure API URL:**
+Create `.env` file in `apps/mobile/`:
+```env
+EXPO_PUBLIC_API_URL=http://localhost:4000
+```
+
+For production:
+```env
+EXPO_PUBLIC_API_URL=https://quickmart-api-v065.onrender.com
+```
+
+3. **Start Expo development server:**
+```bash
+npm run dev:mobile
+# or
+cd apps/mobile && npm run dev
+```
+
+4. **Run on device:**
+   - Install **Expo Go** app on your phone
+   - Scan the QR code shown in terminal
+   - Make sure your phone and computer are on the same network
+
+5. **Run on simulator/emulator:**
+```bash
+npm run ios        # iOS Simulator (macOS only)
+npm run android    # Android Emulator
+npm run web        # Web browser
+```
+
+See [apps/mobile/README.md](apps/mobile/README.md) for detailed mobile app documentation.
+
 ### Test Accounts
 
 After seeding:
