@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
@@ -12,7 +12,7 @@ import { ProductRowSkeleton } from '@/components/ui/skeleton-loader';
 import { productsApi, categoriesApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 
-export default function ProductsPage() {
+function ProductsContent() {
   const searchParams = useSearchParams();
   const categorySlug = searchParams.get('category') || undefined;
   const search = searchParams.get('search') || undefined;
@@ -202,5 +202,23 @@ export default function ProductsPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-white">
+        <Navbar />
+        <main className="container mx-auto px-4 py-16">
+          <div className="text-center">
+            <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-swiggy-orange border-t-transparent mx-auto" />
+            <p className="text-sm text-gray-500">Loading...</p>
+          </div>
+        </main>
+      </div>
+    }>
+      <ProductsContent />
+    </Suspense>
   );
 }

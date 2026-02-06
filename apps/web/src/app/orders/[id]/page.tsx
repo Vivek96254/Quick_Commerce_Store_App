@@ -110,7 +110,10 @@ export default function OrderDetailPage() {
             unit: item.product.unit || '',
             stockQuantity: item.product.stockQuantity || 0,
             isAvailable: item.product.isAvailable !== false,
-            images: item.product.images || [],
+            images: (item.product.images || []).map((img: any) => ({
+              url: img.url,
+              isPrimary: img.isPrimary ?? false,
+            })),
           },
           itemTotal: item.itemTotal,
         });

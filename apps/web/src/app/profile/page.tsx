@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Mail, Phone, MapPin, Package, Settings, LogOut, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,11 +13,16 @@ import Link from 'next/link';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { isAuthenticated, user, logout } = useAuthStore();
+  const { isAuthenticated, user, logout, _hasHydrated } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
 
-  if (!isAuthenticated) {
-    router.push('/login?redirect=/profile');
+  useEffect(() => {
+    if (_hasHydrated && !isAuthenticated) {
+      router.push('/login?redirect=/profile');
+    }
+  }, [_hasHydrated, isAuthenticated, router]);
+
+  if (!_hasHydrated || !isAuthenticated) {
     return null;
   }
 

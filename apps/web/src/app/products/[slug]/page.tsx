@@ -98,7 +98,10 @@ export default function ProductPage() {
           unit: product.unit || '',
           stockQuantity: product.stockQuantity,
           isAvailable: true,
-          images: product.images || [],
+          images: (product.images || []).map((img: any) => ({
+            url: img.url,
+            isPrimary: img.isPrimary ?? false,
+          })),
         },
         itemTotal: effectivePrice * quantity,
       });

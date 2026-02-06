@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { XCircle, RefreshCw, Home, CreditCard } from 'lucide-react';
 import Link from 'next/link';
@@ -7,7 +8,7 @@ import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { Button } from '@/components/ui/button';
 
-export default function PaymentFailedPage() {
+function PaymentFailedContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
   const reason = searchParams.get('reason') || 'Payment could not be processed';
@@ -88,5 +89,23 @@ export default function PaymentFailedPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function PaymentFailedPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <main className="container mx-auto px-4 py-16">
+          <div className="text-center">
+            <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-swiggy-orange border-t-transparent mx-auto" />
+            <p className="text-sm text-gray-500">Loading...</p>
+          </div>
+        </main>
+      </div>
+    }>
+      <PaymentFailedContent />
+    </Suspense>
   );
 }

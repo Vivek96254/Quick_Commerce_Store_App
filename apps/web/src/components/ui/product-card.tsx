@@ -58,7 +58,10 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
           unit: product.unit || '',
           stockQuantity: product.stockQuantity,
           isAvailable: product.isAvailable !== false,
-          images: product.images || [],
+          images: (product.images || []).map((img) => ({
+            url: img.url,
+            isPrimary: img.isPrimary ?? false,
+          })),
         },
         itemTotal: effectivePrice,
       });

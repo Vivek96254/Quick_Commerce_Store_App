@@ -3,6 +3,10 @@ const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   transpilePackages: ['@quickmart/shared-types'],
+  // Skip generating static error pages
+  generateBuildId: async () => {
+    return 'build-' + Date.now();
+  },
   images: {
     remotePatterns: [
       {
