@@ -7,6 +7,7 @@ import {
 import { DatabaseService } from '../../database/database.service';
 import { RedisService } from '../../redis/redis.service';
 import { LoggerService } from '../../common/services/logger.service';
+import { OutboxService } from '../../common/services/outbox.service';
 import { CartService } from '../cart/cart.service';
 import { Prisma, OrderStatus, PaymentMethod } from '@quickmart/db';
 import { nanoid } from 'nanoid';
@@ -17,6 +18,7 @@ export class OrdersService {
     private readonly db: DatabaseService,
     private readonly redis: RedisService,
     private readonly logger: LoggerService,
+    private readonly outbox: OutboxService,
     private readonly cartService: CartService,
   ) {}
 
@@ -190,6 +192,15 @@ export class OrdersService {
           method: input.paymentMethod as PaymentMethod,
           status: input.paymentMethod === 'CASH_ON_DELIVERY' ? 'PENDING' : 'PENDING',
         },
+      });
+
+      // Write outbox event atomically within the same transaction
+      await this.outbox.writeEvent(tx, 'ORDER_CREATED', {
+        orderId: newOrder.id,
+        orderNumber: newOrder.orderNumber,
+        userId,
+        total,
+        paymentMethod: input.paymentMethod,
       });
 
       return newOrder;
@@ -416,14 +427,18 @@ export class OrdersService {
       );
     }
 
+    const now = new Date();
     await this.db.$transaction([
       this.db.order.update({
         where: { id: orderId },
         data: {
           status,
-          ...(status === 'DELIVERED' && { deliveredAt: new Date() }),
+          ...(status === 'CONFIRMED' && { confirmedAt: now }),
+          ...(status === 'PACKED' && { packedAt: now }),
+          ...(status === 'OUT_FOR_DELIVERY' && { dispatchedAt: now }),
+          ...(status === 'DELIVERED' && { deliveredAt: now }),
           ...(status === 'CANCELLED' && {
-            cancelledAt: new Date(),
+            cancelledAt: now,
             cancellationReason: notes,
           }),
         },
@@ -441,6 +456,20 @@ export class OrdersService {
     // If cancelled, restore stock
     if (status === 'CANCELLED') {
       await this.restoreStock(orderId);
+      await this.outbox.writeEventDirect('ORDER_CANCELLED', {
+        orderId,
+        orderNumber: order.orderNumber,
+        userId: order.userId,
+        reason: notes,
+      });
+    } else {
+      await this.outbox.writeEventDirect('ORDER_STATUS_CHANGED', {
+        orderId,
+        orderNumber: order.orderNumber,
+        userId: order.userId,
+        previousStatus: order.status,
+        newStatus: status,
+      });
     }
 
     this.logger.audit('ORDER_STATUS_UPDATED', changedBy || 'system', {
@@ -512,8 +541,12 @@ export class OrdersService {
       paymentMethod: order.paymentMethod,
       notes: order.notes,
       estimatedDelivery: order.estimatedDelivery?.toISOString(),
+      confirmedAt: order.confirmedAt?.toISOString() ?? null,
+      packedAt: order.packedAt?.toISOString() ?? null,
+      dispatchedAt: order.dispatchedAt?.toISOString() ?? null,
       deliveredAt: order.deliveredAt?.toISOString(),
       cancelledAt: order.cancelledAt?.toISOString(),
+      slaBreachedAt: order.slaBreachedAt?.toISOString() ?? null,
       cancellationReason: order.cancellationReason,
       deliveryAddress: order.deliveryAddress,
       items: order.items.map((item: any) => ({

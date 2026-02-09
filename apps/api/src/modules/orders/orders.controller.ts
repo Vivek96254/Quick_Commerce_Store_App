@@ -7,13 +7,17 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
+  Headers,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
+import { OrderLifecycleService } from './order-lifecycle.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { IdempotencyInterceptor } from '../../common/interceptors/idempotency.interceptor';
 import { OrderStatus, PaymentMethod } from '@quickmart/db';
 
 @ApiTags('orders')
@@ -21,9 +25,14 @@ import { OrderStatus, PaymentMethod } from '@quickmart/db';
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly lifecycleService: OrderLifecycleService,
+  ) {}
 
   @Post()
+  @UseInterceptors(IdempotencyInterceptor)
+  @ApiHeader({ name: 'Idempotency-Key', required: false, description: 'Unique key to prevent duplicate orders' })
   @ApiOperation({ summary: 'Create order from cart' })
   async createOrder(
     @CurrentUser('id') userId: string,
@@ -118,5 +127,61 @@ export class OrdersController {
     @Body() body: { status: OrderStatus; notes?: string },
   ) {
     return this.ordersService.updateStatus(id, body.status, body.notes, userId);
+  }
+
+  @Post('admin/:id/partial-fulfillment')
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Partial fulfillment — remove items & auto-refund (Admin)' })
+  async partialFulfillment(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body() body: { itemIds: string[] },
+  ) {
+    return this.lifecycleService.partialFulfillment(id, body.itemIds, userId);
+  }
+
+  // ─── Polling Fallback (Mobile Reliability) ──────────────────────
+
+  @Get(':id/poll')
+  @ApiOperation({
+    summary: 'Poll order status (websocket fallback for mobile)',
+    description:
+      'Lightweight endpoint that returns only status + timestamps. ' +
+      'Returns 304 Not Modified when If-None-Match matches the current ETag.',
+  })
+  async pollOrderStatus(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: string,
+    @Param('id') id: string,
+    @Headers('if-none-match') ifNoneMatch?: string,
+  ) {
+    const isAdmin = ['ADMIN', 'SUPER_ADMIN'].includes(role);
+    const order = await this.ordersService.findById(
+      id,
+      isAdmin ? undefined : userId,
+    );
+
+    // Build a lightweight status payload
+    const statusPayload = {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      confirmedAt: order.confirmedAt,
+      packedAt: order.packedAt,
+      dispatchedAt: order.dispatchedAt,
+      deliveredAt: order.deliveredAt,
+      cancelledAt: order.cancelledAt,
+      estimatedDelivery: order.estimatedDelivery,
+    };
+
+    // Simple ETag based on status + timestamp
+    const etag = `"${order.status}-${order.updatedAt || order.createdAt}"`;
+
+    if (ifNoneMatch && ifNoneMatch === etag) {
+      return { notModified: true, etag };
+    }
+
+    return { ...statusPayload, etag };
   }
 }

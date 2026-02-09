@@ -4,11 +4,12 @@ import {
   Body,
   Param,
   UseGuards,
+  UseInterceptors,
   Req,
   Headers,
   RawBodyRequest,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
 import { Request } from 'express';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -16,6 +17,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
+import { IdempotencyInterceptor } from '../../common/interceptors/idempotency.interceptor';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -24,7 +26,9 @@ export class PaymentsController {
 
   @Post('initiate/:orderId')
   @UseGuards(JwtAuthGuard)
+  @UseInterceptors(IdempotencyInterceptor)
   @ApiBearerAuth()
+  @ApiHeader({ name: 'Idempotency-Key', required: false, description: 'Unique key to prevent duplicate payment initiations' })
   @ApiOperation({ summary: 'Initiate payment for order' })
   async initiatePayment(
     @Param('orderId') orderId: string,

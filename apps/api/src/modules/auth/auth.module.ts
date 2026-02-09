@@ -7,6 +7,8 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { UsersModule } from '../users/users.module';
+import { SessionTrackingService } from '../../common/services/session-tracking.service';
+import { AuditLogService } from '../../common/services/audit-log.service';
 
 @Module({
   imports: [
@@ -24,7 +26,13 @@ import { UsersModule } from '../users/users.module';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, JwtRefreshStrategy],
-  exports: [AuthService, JwtModule],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    JwtRefreshStrategy,
+    SessionTrackingService,
+    AuditLogService,
+  ],
+  exports: [AuthService, JwtModule, SessionTrackingService, AuditLogService],
 })
 export class AuthModule {}

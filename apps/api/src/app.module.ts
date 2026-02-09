@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -22,6 +22,9 @@ import { AdminModule } from './modules/admin/admin.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import { HealthModule } from './modules/health/health.module';
 import { UploadModule } from './modules/upload/upload.module';
+
+// Middleware
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 
 // Configuration validation
 import configuration from './config/configuration';
@@ -89,4 +92,8 @@ import { validate } from './config/env.validation';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+}

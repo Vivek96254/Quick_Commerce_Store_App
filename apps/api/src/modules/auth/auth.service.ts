@@ -263,7 +263,6 @@ export class AuthService {
         where: {
           token: refreshToken,
           userId: payload.sub,
-          revokedAt: null,
           expiresAt: { gt: new Date() },
         },
         include: { user: true },
@@ -273,17 +272,42 @@ export class AuthService {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      // Revoke old refresh token
+      // ── Family-based reuse detection ──────────────────────────
+      // If the token was already revoked, someone is replaying it.
+      // Revoke the *entire* family to force re-login on every device.
+      if (storedToken.revokedAt) {
+        this.logger.warn(
+          `Refresh-token reuse detected for user ${payload.sub}, family ${storedToken.family}`,
+          'AuthService',
+        );
+
+        if (storedToken.family) {
+          await this.db.refreshToken.updateMany({
+            where: { family: storedToken.family, revokedAt: null },
+            data: { revokedAt: new Date() },
+          });
+        }
+
+        throw new UnauthorizedException(
+          'Token reuse detected — all sessions revoked. Please log in again.',
+        );
+      }
+
+      // Revoke old refresh token (mark it used)
       await this.db.refreshToken.update({
         where: { id: storedToken.id },
         data: { revokedAt: new Date() },
       });
 
-      // Generate new tokens
-      const tokens = await this.generateTokens(storedToken.user);
+      // Generate new tokens (same family)
+      const tokens = await this.generateTokens(
+        storedToken.user,
+        storedToken.family || undefined,
+      );
 
       return { tokens };
-    } catch {
+    } catch (err: any) {
+      if (err instanceof UnauthorizedException) throw err;
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
@@ -308,12 +332,15 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
-  private async generateTokens(user: {
-    id: string;
-    email: string | null;
-    phone: string | null;
-    role: string;
-  }): Promise<AuthTokens> {
+  private async generateTokens(
+    user: {
+      id: string;
+      email: string | null;
+      phone: string | null;
+      role: string;
+    },
+    existingFamily?: string,
+  ): Promise<AuthTokens> {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
@@ -325,19 +352,23 @@ export class AuthService {
 
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d',
+      expiresIn:
+        this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d',
     });
 
-    // Store refresh token
-    const refreshExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
+    // Store refresh token with family for rotation detection
+    const refreshExpiresIn =
+      this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
     const expiresAt = new Date(
-      Date.now() + this.parseExpiresIn(refreshExpiresIn)
+      Date.now() + this.parseExpiresIn(refreshExpiresIn),
     );
+    const family = existingFamily || nanoid(16);
 
     await this.db.refreshToken.create({
       data: {
         token: refreshToken,
         userId: user.id,
+        family,
         expiresAt,
       },
     });
@@ -345,9 +376,10 @@ export class AuthService {
     return {
       accessToken,
       refreshToken,
-      expiresIn: this.parseExpiresIn(
-        this.configService.get<string>('JWT_EXPIRES_IN') || '15m'
-      ) / 1000,
+      expiresIn:
+        this.parseExpiresIn(
+          this.configService.get<string>('JWT_EXPIRES_IN') || '15m',
+        ) / 1000,
     };
   }
 

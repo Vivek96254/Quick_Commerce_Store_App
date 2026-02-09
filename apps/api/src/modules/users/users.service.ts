@@ -17,6 +17,7 @@ export class UsersService {
         firstName: true,
         lastName: true,
         role: true,
+        adminRole: true,
         isActive: true,
         isEmailVerified: true,
         isPhoneVerified: true,
